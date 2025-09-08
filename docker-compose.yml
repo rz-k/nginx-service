@@ -1,10 +1,6 @@
-version: '3.8'
-
 services:
   fastapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     expose:
       - "8000"
     restart: unless-stopped
@@ -18,10 +14,11 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./certbot/certs:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-      - ./nginx/certs/conf:/etc/nginx/conf.d
+      - ./nginx/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
+      - ./certbot/certs/dhparam.pem:/etc/letsencrypt/ssl-dhparams.pem
     depends_on:
       - fastapi
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    command: nginx -g "daemon off;"
     restart: unless-stopped
 
   certbot:
@@ -29,29 +26,26 @@ services:
     volumes:
       - ./certbot/certs:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+    depends_on:
+      - nginx
     entrypoint: >
       /bin/sh -c "
       if [ ! -d /etc/letsencrypt/live/test.gray-city.ir ]; then
+        echo 'در حال دریافت گواهی اولیه برای test.gray-city.ir...';
         certbot certonly --webroot
-        --webroot-path=/var/www/certbot
-        --email Zankoan4@gmail.com
-        --agree-tos
-        --no-eff-email
-        --domain test.gray-city.ir
-        --non-interactive
-        --keep-until-expiring
-        --expand
-        --redirect
-        --hsts
-        --staple-ocsp
-        --must-staple
-      ; fi
+          --webroot-path=/var/www/certbot
+          --email your-email@example.com
+          --agree-tos
+          --no-eff-email
+          --domain test.gray-city.ir
+          --non-interactive
+          --keep-until-expiring
+          || echo '⚠️ دریافت گواهی اولیه ناموفق بود';
+      fi;
       while true; do
-        sleep 12h
-        certbot renew --webroot --webroot-path=/var/www/certbot --quiet --no-self-upgrade
-        nginx -s reload
-      ; done
+        echo 'در حال بررسی تمدید گواهی...';
+        certbot renew --quiet --no-self-upgrade --post-hook 'nginx -s reload' || true;
+        sleep 43200;
+      done
       "
-    depends_on:
-      - nginx
     restart: unless-stopped
