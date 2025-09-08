@@ -12,10 +12,10 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./certbot/certs:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-      - ./nginx/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
+      - ./certbot/certs/conf/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
       - ./certbot/certs/dhparam.pem:/etc/letsencrypt/ssl-dhparams.pem
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/certs:/etc/letsencrypt
     depends_on:
       - fastapi
     command: nginx -g "daemon off;"
@@ -34,17 +34,17 @@ services:
         echo 'در حال دریافت گواهی اولیه برای test.gray-city.ir...';
         certbot certonly --webroot
           --webroot-path=/var/www/certbot
+          --domain test.gray-city.ir
           --email your-email@example.com
           --agree-tos
           --no-eff-email
-          --domain test.gray-city.ir
           --non-interactive
           --keep-until-expiring
-          || echo '⚠️ دریافت گواهی اولیه ناموفق بود';
+          || echo '⚠️ دریافت گواهی اولیه ناموفق بود یا قبلاً انجام شده';
       fi;
       while true; do
-        echo 'در حال بررسی تمدید گواهی...';
-        certbot renew --quiet --no-self-upgrade --post-hook 'nginx -s reload' || true;
+        echo '🔄 بررسی تمدید گواهی...';
+        certbot renew --quiet --no-self-upgrade --post-hook 'nginx -s reload';
         sleep 43200;
       done
       "
