@@ -1,34 +1,57 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: fastapi_app
-    restart: always
-    ports:
-      - "8000:8000"
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    restart: unless-stopped
 
   nginx:
-    image: nginx:latest
-    container_name: nginx_reverse_proxy
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
+    image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./certbot/certs:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./nginx/certs/conf:/etc/nginx/conf.d
     depends_on:
-      - app
+      - fastapi
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    restart: unless-stopped
 
   certbot:
     image: certbot/certbot
-    container_name: certbot
     volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew; done'"
-
-volumes:
-  certbot-etc:
-  certbot-var:
+      - ./certbot/certs:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "
+      if [ ! -d /etc/letsencrypt/live/test.gray-city.ir ]; then
+        certbot certonly --webroot
+        --webroot-path=/var/www/certbot
+        --email Zankoan4@gmail.com
+        --agree-tos
+        --no-eff-email
+        --domain test.gray-city.ir
+        --non-interactive
+        --keep-until-expiring
+        --expand
+        --redirect
+        --hsts
+        --staple-ocsp
+        --must-staple
+      ; fi
+      while true; do
+        sleep 12h
+        certbot renew --webroot --webroot-path=/var/www/certbot --quiet --no-self-upgrade
+        nginx -s reload
+      ; done
+      "
+    depends_on:
+      - nginx
+    restart: unless-stopped
