@@ -43,8 +43,8 @@ services:
       dockerfile: Dockerfile
     container_name: fastapi-app
     environment:
-      - VIRTUAL_HOST=reza.gray-city.ir
-      - LETSENCRYPT_HOST=reza.gray-city.ir
+      - VIRTUAL_HOST=rzk.gray-city.ir
+      - LETSENCRYPT_HOST=rzk.gray-city.ir
       - LETSENCRYPT_EMAIL=zankoan4@gmail.com
       - VIRTUAL_PORT=8000
     restart: unless-stopped
