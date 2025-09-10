@@ -26,7 +26,7 @@ services:
     environment:
       - DEFAULT_EMAIL=Zankoan4@gmail.com
       - NGINX_PROXY_CONTAINER=nginx-proxy
-      # برای تست staging uncomment کن:
+      # if need to test just uncomment down line
       # - ACME_CA_URI=https://acme-staging-v02.api.letsencrypt.org/directory
 
     volumes:
