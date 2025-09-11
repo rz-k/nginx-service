@@ -24,7 +24,7 @@ services:
     depends_on:
       - nginx-proxy
     environment:
-      - DEFAULT_EMAIL=your-email@example.com
+      - DEFAULT_EMAIL=Zankoan4@gmail.com
       - NGINX_PROXY_CONTAINER=nginx-proxy
       # if need to test just uncomment down line
       # - ACME_CA_URI=https://acme-staging-v02.api.letsencrypt.org/directory
@@ -37,21 +37,35 @@ services:
     networks:
       - proxy-network
 
-  fastapi-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: fastapi-app
+  dummy:
+    image: alpine
+    container_name: dummy-fastapi
     environment:
-      - VIRTUAL_HOST=your-domain.com
-      - LETSENCRYPT_HOST=your-domain.com
-      - LETSENCRYPT_EMAIL=your-email@example.com
+      - VIRTUAL_HOST=rzk.gray-city.ir
+      - LETSENCRYPT_HOST=rzk.gray-city.ir
+      - LETSENCRYPT_EMAIL=Zankoan4@gmail.com
       - VIRTUAL_PORT=8000
-    restart: unless-stopped
     networks:
       - proxy-network
-    expose:
-      - "8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: tail -f /dev/null
+
+  # fastapi-app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: fastapi-app
+  #   environment:
+  #     - VIRTUAL_HOST=your-domain.com
+  #     - LETSENCRYPT_HOST=your-domain.com
+  #     - LETSENCRYPT_EMAIL=your-email@example.com
+  #     - VIRTUAL_PORT=8000
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy-network
+  #   expose:
+  #     - "8000"
 
 volumes:
   certs:
@@ -62,3 +76,6 @@ volumes:
 networks:
   proxy-network:
     driver: bridge
+    external: false
+    name: proxy-network
+    attachable: true
